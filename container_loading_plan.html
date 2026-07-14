@@ -1,0 +1,805 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Container Loading Plan</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #0A0F1A;
+    --panel: #10192B;
+    --panel-2: #0D1522;
+    --line: rgba(79,195,247,0.14);
+    --line-strong: rgba(79,195,247,0.32);
+    --text: #E7ECF4;
+    --muted: #7F8DA3;
+    --cyan: #4FC3F7;
+    --orange: #FF7A45;
+    --green: #43D9A3;
+    --border: #1E2A42;
+    --radius: 3px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      linear-gradient(var(--line) 1px, transparent 1px) 0 0/40px 40px,
+      linear-gradient(90deg, var(--line) 1px, transparent 1px) 0 0/40px 40px,
+      var(--bg);
+    color:var(--text);
+    font-family:'Inter', sans-serif;
+    min-height:100vh;
+  }
+  #app{max-width:1400px;margin:0 auto;padding:20px 20px 60px;}
+
+  /* Title block, engineering-drawing style */
+  .titleblock{
+    border:1px solid var(--border);
+    background:var(--panel);
+    display:flex;
+    align-items:stretch;
+    margin-bottom:18px;
+    position:relative;
+  }
+  .titleblock::before{
+    content:"";position:absolute;top:6px;left:6px;width:10px;height:10px;
+    border-top:2px solid var(--cyan);border-left:2px solid var(--cyan);
+  }
+  .titleblock::after{
+    content:"";position:absolute;bottom:6px;right:6px;width:10px;height:10px;
+    border-bottom:2px solid var(--cyan);border-right:2px solid var(--cyan);
+  }
+  .titleblock .main{flex:1;padding:16px 20px;}
+  .titleblock h1{
+    font-family:'Space Grotesk',sans-serif;font-size:22px;font-weight:700;
+    margin:0 0 4px;letter-spacing:0.5px;
+  }
+  .titleblock .sub{color:var(--muted);font-size:12.5px;font-family:'JetBrains Mono',monospace;}
+  .titleblock .meta{
+    display:flex;border-left:1px solid var(--border);
+  }
+  .titleblock .meta div{
+    padding:12px 16px;border-left:1px solid var(--border);
+    font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);
+    display:flex;flex-direction:column;justify-content:center;gap:2px;min-width:90px;
+  }
+  .titleblock .meta div:first-child{border-left:none;}
+  .titleblock .meta span{color:var(--cyan);font-size:13px;font-weight:700;}
+
+  .main-grid{display:grid;grid-template-columns:340px 1fr;gap:16px;align-items:start;}
+  @media (max-width:900px){.main-grid{grid-template-columns:1fr;}}
+
+  .panel{
+    background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);
+    padding:14px 16px;margin-bottom:14px;
+  }
+  .panel h2{
+    font-family:'JetBrains Mono',monospace;font-size:11.5px;letter-spacing:1.5px;
+    text-transform:uppercase;color:var(--cyan);margin:0 0 12px;
+    display:flex;align-items:center;gap:8px;
+  }
+  .panel h2::before{content:"";width:6px;height:6px;background:var(--cyan);display:inline-block;}
+
+  label{display:block;font-size:12px;color:var(--muted);margin-bottom:4px;font-family:'JetBrains Mono',monospace;}
+  select, input[type=text], input[type=number]{
+    width:100%;background:var(--panel-2);border:1px solid var(--border);color:var(--text);
+    padding:7px 8px;border-radius:2px;font-size:13px;font-family:'JetBrains Mono',monospace;
+    margin-bottom:10px;
+  }
+  select:focus, input:focus{outline:none;border-color:var(--cyan);}
+
+  .dims-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;}
+  .dims-row label{grid-column:1/-1;margin-bottom:2px;}
+
+  .btn{
+    background:var(--cyan);color:#06131F;border:none;padding:10px 14px;
+    font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:13px;
+    border-radius:2px;cursor:pointer;letter-spacing:0.3px;width:100%;
+    transition:filter .15s;
+  }
+  .btn:hover{filter:brightness(1.1);}
+  .btn.secondary{
+    background:transparent;color:var(--cyan);border:1px solid var(--line-strong);
+  }
+  .btn.small{width:auto;padding:6px 10px;font-size:11.5px;}
+  .btn.ghost{background:transparent;color:var(--muted);border:1px solid var(--border);}
+  .btn:disabled{opacity:0.4;cursor:not-allowed;}
+
+  .row-gap{display:flex;gap:8px;margin-bottom:10px;}
+  .row-gap > *{flex:1;}
+
+  .file-drop{
+    border:1px dashed var(--line-strong);border-radius:2px;padding:16px 10px;
+    text-align:center;color:var(--muted);font-size:12px;cursor:pointer;margin-bottom:10px;
+    font-family:'JetBrains Mono',monospace;
+  }
+  .file-drop:hover{border-color:var(--cyan);color:var(--cyan);}
+  .file-drop.dragover{border-color:var(--cyan);background:rgba(79,195,247,0.06);color:var(--cyan);}
+
+  table.box-table{width:100%;border-collapse:collapse;font-size:11.5px;font-family:'JetBrains Mono',monospace;}
+  table.box-table th{
+    text-align:left;color:var(--muted);font-weight:500;padding:4px 4px;border-bottom:1px solid var(--border);
+    font-size:10px;text-transform:uppercase;letter-spacing:0.5px;
+  }
+  table.box-table td{padding:3px 3px;border-bottom:1px solid rgba(255,255,255,0.04);}
+  table.box-table input{margin:0;padding:4px 5px;font-size:11.5px;width:100%;min-width:0;}
+  table.box-table .swatch{width:10px;height:10px;border-radius:50%;display:inline-block;}
+  .table-scroll{max-height:260px;overflow-y:auto;margin-bottom:8px;}
+  .del-row{background:transparent;border:none;color:var(--muted);cursor:pointer;font-size:14px;padding:0 4px;}
+  .del-row:hover{color:var(--orange);}
+
+  /* Viewport */
+  .viewport{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;}
+  .container-tabs{
+    display:flex;gap:2px;padding:8px 8px 0;flex-wrap:wrap;background:var(--panel-2);
+    border-bottom:1px solid var(--border);
+  }
+  .tab{
+    padding:7px 14px;font-family:'JetBrains Mono',monospace;font-size:11.5px;color:var(--muted);
+    cursor:pointer;border:1px solid var(--border);border-bottom:none;border-radius:2px 2px 0 0;
+    background:var(--panel);
+  }
+  .tab.active{color:var(--cyan);border-color:var(--line-strong);background:var(--panel-2);}
+
+  #canvas-wrap{position:relative;height:440px;background:var(--panel-2);}
+  #three-canvas{width:100%;height:100%;display:block;cursor:grab;}
+  #canvas-wrap:active #three-canvas{cursor:grabbing;}
+  .canvas-hint{
+    position:absolute;bottom:10px;left:12px;font-size:10.5px;color:var(--muted);
+    font-family:'JetBrains Mono',monospace;letter-spacing:0.3px;pointer-events:none;
+  }
+  .canvas-empty{
+    position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+    color:var(--muted);font-family:'JetBrains Mono',monospace;font-size:13px;text-align:center;
+    flex-direction:column;gap:8px;
+  }
+
+  .stats-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--border);}
+  @media (max-width:700px){.stats-strip{grid-template-columns:repeat(2,1fr);}}
+  .stat{background:var(--panel);padding:14px 16px;}
+  .stat .label{font-size:10.5px;color:var(--muted);font-family:'JetBrains Mono',monospace;text-transform:uppercase;letter-spacing:0.8px;margin-bottom:6px;}
+  .stat .value{font-family:'Space Grotesk',sans-serif;font-size:22px;font-weight:700;color:var(--text);}
+  .stat .value.warn{color:var(--orange);}
+  .stat .value.ok{color:var(--green);}
+  .stat .sub{font-size:11px;color:var(--muted);margin-top:2px;}
+  .bar{height:5px;background:var(--panel-2);border-radius:3px;margin-top:8px;overflow:hidden;}
+  .bar > div{height:100%;background:var(--cyan);}
+
+  .legend{display:flex;flex-wrap:wrap;gap:10px;padding:10px 16px;border-top:1px solid var(--border);background:var(--panel-2);}
+  .legend-item{display:flex;align-items:center;gap:6px;font-size:11.5px;color:var(--muted);font-family:'JetBrains Mono',monospace;}
+  .legend-swatch{width:10px;height:10px;border-radius:2px;}
+
+  .unplaced-panel{margin-top:14px;}
+  .unplaced-list{display:flex;flex-direction:column;gap:6px;}
+  .unplaced-item{
+    display:flex;justify-content:space-between;align-items:center;
+    background:var(--panel-2);border:1px solid var(--border);border-left:3px solid var(--orange);
+    padding:8px 12px;border-radius:2px;font-size:12.5px;
+  }
+  .unplaced-item .name{font-weight:600;}
+  .unplaced-item .reason{color:var(--muted);font-size:11px;font-family:'JetBrains Mono',monospace;}
+  .empty-note{color:var(--green);font-size:12.5px;font-family:'JetBrains Mono',monospace;}
+
+  .footer-actions{display:flex;gap:10px;margin-top:16px;flex-wrap:wrap;}
+  .footer-actions .btn{width:auto;padding:12px 20px;}
+
+  ::-webkit-scrollbar{width:8px;height:8px;}
+  ::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px;}
+  ::-webkit-scrollbar-track{background:transparent;}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <div class="titleblock">
+    <div class="main">
+      <h1>CONTAINER LOADING PLAN</h1>
+      <div class="sub">화물 데이터를 업로드하고 컨테이너 적입 배치를 자동 계산합니다</div>
+    </div>
+    <div class="meta">
+      <div>DATE<span id="metaDate">-</span></div>
+      <div>UNIT<span>cm / kg</span></div>
+      <div>STATUS<span id="metaStatus">대기</span></div>
+    </div>
+  </div>
+
+  <div class="main-grid">
+    <!-- SIDEBAR -->
+    <aside>
+      <div class="panel">
+        <h2>Container Spec</h2>
+        <label>컨테이너 타입</label>
+        <select id="containerType"></select>
+        <div class="dims-row">
+          <div><label>길이 L (cm)</label><input type="number" id="cL"></div>
+          <div><label>폭 W (cm)</label><input type="number" id="cW"></div>
+          <div><label>높이 H (cm)</label><input type="number" id="cH"></div>
+        </div>
+        <label>최대 적재중량 (kg)</label>
+        <input type="number" id="cMaxWeight">
+        <label>필요 시 추가 컨테이너 자동 투입</label>
+        <select id="multiContainer">
+          <option value="1">예 (남는 화물은 2호기, 3호기…)</option>
+          <option value="0">아니오 (1대만 계산)</option>
+        </select>
+      </div>
+
+      <div class="panel">
+        <h2>Cargo Data</h2>
+        <div class="file-drop" id="fileDrop">
+          CSV / XLSX 파일을 끌어놓거나 클릭하여 업로드<br>
+          <span style="color:var(--cyan)">품목명 · 길이 · 폭 · 높이 · 수량 · 무게</span>
+        </div>
+        <input type="file" id="fileInput" accept=".csv,.xlsx,.xls" style="display:none">
+        <div class="row-gap">
+          <button class="btn ghost small" id="templateBtn">템플릿 다운로드</button>
+          <button class="btn ghost small" id="addRowBtn">+ 행 추가</button>
+        </div>
+        <div class="table-scroll">
+          <table class="box-table" id="boxTable">
+            <thead>
+              <tr>
+                <th style="width:16px;"></th>
+                <th>품목명</th><th>L</th><th>W</th><th>H</th><th>수량</th><th>무게</th><th>회전</th><th></th>
+              </tr>
+            </thead>
+            <tbody id="boxTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <button class="btn" id="runBtn">배치 계산 실행 ▶</button>
+    </aside>
+
+    <!-- MAIN VIEWPORT -->
+    <main>
+      <div class="viewport">
+        <div class="container-tabs" id="containerTabs"></div>
+        <div id="canvas-wrap">
+          <canvas id="three-canvas"></canvas>
+          <div class="canvas-empty" id="canvasEmpty">
+            <div>▦</div>
+            <div>화물 데이터를 입력하고<br>"배치 계산 실행"을 눌러주세요</div>
+          </div>
+          <div class="canvas-hint">드래그: 회전 · 휠: 확대/축소</div>
+        </div>
+        <div class="legend" id="legend" style="display:none;"></div>
+        <div class="stats-strip" id="statsStrip" style="display:none;"></div>
+      </div>
+
+      <div class="panel unplaced-panel" id="unplacedPanel" style="display:none;">
+        <h2>Unplaced Cargo</h2>
+        <div class="unplaced-list" id="unplacedList"></div>
+      </div>
+
+      <div class="footer-actions" id="footerActions" style="display:none;">
+        <button class="btn secondary" id="exportBtn">⬇ 적입계획서 Excel 다운로드</button>
+      </div>
+    </main>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+document.getElementById('metaDate').textContent = new Date().toISOString().slice(0,10);
+
+/* ============ 1. CONTAINER PRESETS ============ */
+const CONTAINER_PRESETS = [
+  {id:'20gp', name:"20ft 표준 (20GP)", L:589, W:235, H:239, maxWeight:28200},
+  {id:'40gp', name:"40ft 표준 (40GP)", L:1203, W:235, H:239, maxWeight:26700},
+  {id:'40hc', name:"40ft 하이큐브 (40HC)", L:1203, W:235, H:269, maxWeight:26500},
+  {id:'45hc', name:"45ft 하이큐브 (45HC)", L:1352, W:235, H:269, maxWeight:27600},
+  {id:'custom', name:"사용자 지정 (Custom)", L:1203, W:235, H:239, maxWeight:26700},
+];
+const containerTypeSel = document.getElementById('containerType');
+CONTAINER_PRESETS.forEach(c=>{
+  const opt=document.createElement('option'); opt.value=c.id; opt.textContent=c.name;
+  containerTypeSel.appendChild(opt);
+});
+const cL=document.getElementById('cL'), cW=document.getElementById('cW'), cH=document.getElementById('cH'), cMaxWeight=document.getElementById('cMaxWeight');
+function applyPreset(){
+  const p = CONTAINER_PRESETS.find(c=>c.id===containerTypeSel.value);
+  cL.value=p.L; cW.value=p.W; cH.value=p.H; cMaxWeight.value=p.maxWeight;
+  const isCustom = p.id==='custom';
+  [cL,cW,cH,cMaxWeight].forEach(i=>i.disabled=!isCustom);
+}
+containerTypeSel.addEventListener('change', applyPreset);
+containerTypeSel.value='40hc';
+applyPreset();
+
+/* ============ 2. BOX TABLE ============ */
+const PALETTE = ['#4FC3F7','#FF7A45','#43D9A3','#FFD166','#B892FF','#FF6B9D','#7FE0E0','#E0A458','#8FD694','#F26D6D'];
+let rowIdCounter=0;
+function colorFor(idx){ return PALETTE[idx % PALETTE.length]; }
+
+const boxTableBody = document.getElementById('boxTableBody');
+function addBoxRow(data){
+  const id = 'row'+(rowIdCounter++);
+  const d = Object.assign({name:'품목'+(boxTableBody.children.length+1), l:100, w:100, h:100, qty:1, weight:10, rotate:true}, data||{});
+  const tr = document.createElement('tr');
+  tr.dataset.id = id;
+  tr.innerHTML = `
+    <td><span class="swatch" style="background:${colorFor(boxTableBody.children.length)}"></span></td>
+    <td><input type="text" class="f-name" value="${escapeHtml(d.name)}"></td>
+    <td><input type="number" class="f-l" value="${d.l}" style="width:52px"></td>
+    <td><input type="number" class="f-w" value="${d.w}" style="width:52px"></td>
+    <td><input type="number" class="f-h" value="${d.h}" style="width:52px"></td>
+    <td><input type="number" class="f-qty" value="${d.qty}" style="width:46px"></td>
+    <td><input type="number" class="f-weight" value="${d.weight}" style="width:52px"></td>
+    <td><input type="checkbox" class="f-rotate" ${d.rotate?'checked':''}></td>
+    <td><button class="del-row">✕</button></td>
+  `;
+  tr.querySelector('.del-row').addEventListener('click', ()=>{ tr.remove(); refreshSwatches(); });
+  boxTableBody.appendChild(tr);
+}
+function refreshSwatches(){
+  [...boxTableBody.children].forEach((tr,idx)=>{
+    tr.querySelector('.swatch').style.background = colorFor(idx);
+  });
+}
+function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function clearBoxTable(){ boxTableBody.innerHTML=''; }
+
+document.getElementById('addRowBtn').addEventListener('click', ()=>{ addBoxRow(); });
+
+function readBoxTable(){
+  const rows=[];
+  [...boxTableBody.children].forEach((tr,idx)=>{
+    const name = tr.querySelector('.f-name').value.trim() || ('품목'+(idx+1));
+    const l = parseFloat(tr.querySelector('.f-l').value)||0;
+    const w = parseFloat(tr.querySelector('.f-w').value)||0;
+    const h = parseFloat(tr.querySelector('.f-h').value)||0;
+    const qty = parseInt(tr.querySelector('.f-qty').value)||0;
+    const weight = parseFloat(tr.querySelector('.f-weight').value)||0;
+    const rotate = tr.querySelector('.f-rotate').checked;
+    if(l>0 && w>0 && h>0 && qty>0){
+      rows.push({name,l,w,h,qty,weight,rotate,color:colorFor(idx)});
+    }
+  });
+  return rows;
+}
+
+// seed with a couple of example rows
+addBoxRow({name:'박스A', l:60, w:40, h:40, qty:40, weight:12, rotate:true});
+addBoxRow({name:'박스B', l:80, w:60, h:50, qty:20, weight:22, rotate:true});
+
+/* ============ 3. FILE UPLOAD (CSV / XLSX) ============ */
+const fileDrop = document.getElementById('fileDrop');
+const fileInput = document.getElementById('fileInput');
+fileDrop.addEventListener('click', ()=>fileInput.click());
+['dragover','dragleave','drop'].forEach(evt=>{
+  fileDrop.addEventListener(evt, e=>{
+    e.preventDefault();
+    if(evt==='dragover') fileDrop.classList.add('dragover');
+    else fileDrop.classList.remove('dragover');
+  });
+});
+fileDrop.addEventListener('drop', e=>{
+  if(e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
+});
+fileInput.addEventListener('change', e=>{
+  if(e.target.files.length) handleFile(e.target.files[0]);
+});
+
+const COL_KEYWORDS = {
+  name: ['품목명','품명','품목','name','item'],
+  length: ['길이','length','len','가로'],
+  width: ['폭','너비','width','세로'],
+  height: ['높이','height'],
+  qty: ['수량','qty','quantity','count','ea'],
+  weight: ['무게','중량','weight','kg'],
+  rotate: ['회전','rotate']
+};
+function detectColumns(headers){
+  const lower = headers.map(h=>String(h).trim().toLowerCase());
+  const result={};
+  for(const [key,list] of Object.entries(COL_KEYWORDS)){
+    let idx = lower.findIndex(h=> list.includes(h));
+    if(idx===-1) idx = lower.findIndex(h=> list.some(k=> h.includes(k)));
+    result[key]=idx;
+  }
+  return result;
+}
+function ingestRows(headers, rows){
+  const cols = detectColumns(headers);
+  clearBoxTable();
+  let added=0;
+  rows.forEach(r=>{
+    if(!r || r.every(v=>v===''||v==null)) return;
+    const name = cols.name>=0 ? String(r[cols.name]||'').trim() : '';
+    const l = cols.length>=0 ? parseFloat(r[cols.length]) : NaN;
+    const w = cols.width>=0 ? parseFloat(r[cols.width]) : NaN;
+    const h = cols.height>=0 ? parseFloat(r[cols.height]) : NaN;
+    const qty = cols.qty>=0 ? parseInt(r[cols.qty]) : 1;
+    const weight = cols.weight>=0 ? parseFloat(r[cols.weight]) : 0;
+    const rotateRaw = cols.rotate>=0 ? String(r[cols.rotate]||'').trim().toUpperCase() : 'Y';
+    const rotate = !(rotateRaw==='N' || rotateRaw==='NO' || rotateRaw==='FALSE');
+    if(name && l>0 && w>0 && h>0 && qty>0){
+      addBoxRow({name, l, w, h, qty, weight: isNaN(weight)?0:weight, rotate});
+      added++;
+    }
+  });
+  refreshSwatches();
+  if(added===0){
+    alert('데이터를 인식하지 못했습니다. 템플릿을 참고해 열 이름(품목명/길이/폭/높이/수량/무게)을 확인해주세요.');
+  }
+}
+function handleFile(file){
+  const ext = file.name.split('.').pop().toLowerCase();
+  if(ext==='csv'){
+    Papa.parse(file, {
+      complete: res=>{
+        const data = res.data.filter(r=>r.length && r.some(v=>v!==''));
+        if(data.length<2) return;
+        ingestRows(data[0], data.slice(1));
+      }
+    });
+  } else {
+    const reader = new FileReader();
+    reader.onload = e=>{
+      const wb = XLSX.read(e.target.result, {type:'array'});
+      const sheet = wb.Sheets[wb.SheetNames[0]];
+      const data = XLSX.utils.sheet_to_json(sheet, {header:1, defval:''});
+      if(data.length<2) return;
+      ingestRows(data[0], data.slice(1));
+    };
+    reader.readAsArrayBuffer(file);
+  }
+}
+
+document.getElementById('templateBtn').addEventListener('click', ()=>{
+  const csv = "품목명,길이(cm),폭(cm),높이(cm),수량,무게(kg),회전허용(Y/N)\n박스A,60,40,40,40,12,Y\n박스B,80,60,50,20,22,Y\n";
+  const blob = new Blob(["\uFEFF"+csv], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href=url; a.download='cargo_template.csv'; a.click();
+  URL.revokeObjectURL(url);
+});
+</script>
+<script>
+/* ============ 4. BIN PACKING ALGORITHM ============ */
+function expandUnits(rows){
+  const units=[];
+  rows.forEach((r,ri)=>{
+    for(let i=0;i<r.qty;i++){
+      units.push({name:r.name, l:r.l, w:r.w, h:r.h, weight:r.weight, rotate:r.rotate, color:r.color, groupIdx:ri});
+    }
+  });
+  return units;
+}
+function getOrientations(it){
+  const {l,w,h}=it;
+  if(!it.rotate) return [[l,w,h]];
+  const perms = [[l,w,h],[l,h,w],[w,l,h],[w,h,l],[h,l,w],[h,w,l]];
+  const seen=new Set(); const out=[];
+  perms.forEach(p=>{ const k=p.join(','); if(!seen.has(k)){ seen.add(k); out.push(p);} });
+  return out;
+}
+function packOneContainer(units, container){
+  const items = units.slice().sort((a,b)=> (b.l*b.w*b.h)-(a.l*a.w*a.h));
+  let spaces = [{x:0,y:0,z:0,l:container.L,w:container.W,h:container.H}];
+  const placed=[]; const unplaced=[];
+  let totalWeight=0;
+  for(const it of items){
+    if(totalWeight + it.weight > container.maxWeight + 1e-6){
+      unplaced.push({...it, reason:'weight'}); continue;
+    }
+    let bestIdx=-1, bestOri=null, bestScore=Infinity;
+    for(let s=0;s<spaces.length;s++){
+      const sp=spaces[s];
+      for(const ori of getOrientations(it)){
+        const [ol,ow,oh]=ori;
+        if(ol<=sp.l+1e-6 && ow<=sp.w+1e-6 && oh<=sp.h+1e-6){
+          const leftover=(sp.l*sp.w*sp.h)-(ol*ow*oh);
+          const score = sp.z*1e9 + sp.y*1e6 + sp.x*1e3 + leftover*1e-6;
+          if(score<bestScore){ bestScore=score; bestIdx=s; bestOri=ori; }
+        }
+      }
+    }
+    if(bestIdx===-1){ unplaced.push({...it, reason:'space'}); continue; }
+    const sp = spaces[bestIdx];
+    const [ol,ow,oh] = bestOri;
+    placed.push({...it, x:sp.x, y:sp.y, z:sp.z, l:ol, w:ow, h:oh});
+    totalWeight += it.weight;
+    spaces.splice(bestIdx,1);
+    const add=[];
+    if(sp.l-ol>1e-6) add.push({x:sp.x+ol, y:sp.y, z:sp.z, l:sp.l-ol, w:sp.w, h:sp.h});
+    if(sp.w-ow>1e-6) add.push({x:sp.x, y:sp.y+ow, z:sp.z, l:ol, w:sp.w-ow, h:sp.h});
+    if(sp.h-oh>1e-6) add.push({x:sp.x, y:sp.y, z:sp.z+oh, l:ol, w:ow, h:sp.h-oh});
+    spaces.push(...add);
+  }
+  const usedVolume = placed.reduce((s,p)=>s+p.l*p.w*p.h,0);
+  return {placed, unplaced, totalWeight, usedVolume};
+}
+function packAll(rows, container, allowMulti){
+  const MAX_CONTAINERS = 40;
+  let remaining = expandUnits(rows);
+  const containers=[];
+  let guardCount=0;
+  while(remaining.length>0 && guardCount<MAX_CONTAINERS){
+    const result = packOneContainer(remaining, container);
+    containers.push(result);
+    guardCount++;
+    if(!allowMulti) { remaining = result.unplaced; break; }
+    if(result.placed.length===0){ remaining = result.unplaced; break; }
+    remaining = result.unplaced.map(u=>({name:u.name,l:u.l,w:u.w,h:u.h,weight:u.weight,rotate:u.rotate,color:u.color,groupIdx:u.groupIdx}));
+  }
+  return {containers, finalUnplaced: remaining};
+}
+
+/* ============ 5. THREE.JS VIEWER ============ */
+const canvas = document.getElementById('three-canvas');
+const canvasWrap = document.getElementById('canvas-wrap');
+const canvasEmpty = document.getElementById('canvasEmpty');
+let renderer, scene, camera;
+let camTheta=0.9, camPhi=1.05, camDist=1800;
+let isDragging=false, lastX=0, lastY=0;
+
+function initThree(){
+  renderer = new THREE.WebGLRenderer({canvas, antialias:true, alpha:true});
+  renderer.setPixelRatio(window.devicePixelRatio||1);
+  scene = new THREE.Scene();
+  camera = new THREE.PerspectiveCamera(45, 1, 1, 20000);
+  const amb = new THREE.AmbientLight(0xffffff, 0.65);
+  scene.add(amb);
+  const dir = new THREE.DirectionalLight(0xffffff, 0.7);
+  dir.position.set(600, 900, 400);
+  scene.add(dir);
+  const dir2 = new THREE.DirectionalLight(0x4fc3f7, 0.25);
+  dir2.position.set(-600,300,-600);
+  scene.add(dir2);
+  resizeThree();
+  animate();
+}
+function resizeThree(){
+  const w = canvasWrap.clientWidth, h = canvasWrap.clientHeight;
+  renderer.setSize(w,h,false);
+  camera.aspect = w/h;
+  camera.updateProjectionMatrix();
+}
+window.addEventListener('resize', ()=>{ if(renderer) resizeThree(); });
+canvas.addEventListener('mousedown', e=>{ isDragging=true; lastX=e.clientX; lastY=e.clientY; });
+window.addEventListener('mouseup', ()=> isDragging=false);
+window.addEventListener('mousemove', e=>{
+  if(!isDragging) return;
+  const dx=e.clientX-lastX, dy=e.clientY-lastY;
+  lastX=e.clientX; lastY=e.clientY;
+  camTheta -= dx*0.006;
+  camPhi = Math.min(Math.max(camPhi - dy*0.006, 0.15), Math.PI-0.15);
+});
+canvas.addEventListener('wheel', e=>{
+  e.preventDefault();
+  camDist = Math.min(Math.max(camDist + e.deltaY*0.6, 300), 6000);
+}, {passive:false});
+// touch support
+let lastTouchDist=null;
+canvas.addEventListener('touchstart', e=>{
+  if(e.touches.length===1){ isDragging=true; lastX=e.touches[0].clientX; lastY=e.touches[0].clientY; }
+});
+canvas.addEventListener('touchmove', e=>{
+  if(e.touches.length===1 && isDragging){
+    const dx=e.touches[0].clientX-lastX, dy=e.touches[0].clientY-lastY;
+    lastX=e.touches[0].clientX; lastY=e.touches[0].clientY;
+    camTheta -= dx*0.006;
+    camPhi = Math.min(Math.max(camPhi - dy*0.006, 0.15), Math.PI-0.15);
+  }
+}, {passive:true});
+canvas.addEventListener('touchend', ()=> isDragging=false);
+
+function animate(){
+  requestAnimationFrame(animate);
+  if(!renderer) return;
+  camera.position.set(
+    camDist*Math.sin(camPhi)*Math.sin(camTheta),
+    camDist*Math.cos(camPhi),
+    camDist*Math.sin(camPhi)*Math.cos(camTheta)
+  );
+  camera.lookAt(0,0,0);
+  renderer.render(scene, camera);
+}
+
+let currentGroup = null;
+function renderContainer(containerResult, containerSpec){
+  if(!renderer) initThree();
+  if(currentGroup) scene.remove(currentGroup);
+  currentGroup = new THREE.Group();
+  scene.add(currentGroup);
+
+  const {L,W,H} = containerSpec;
+  // container wireframe (blueprint style)
+  const geo = new THREE.BoxGeometry(L,H,W);
+  const edges = new THREE.EdgesGeometry(geo);
+  const wire = new THREE.LineSegments(edges, new THREE.LineBasicMaterial({color:0x4fc3f7, transparent:true, opacity:0.55}));
+  currentGroup.add(wire);
+
+  // floor grid (blueprint graph paper)
+  const grid = new THREE.GridHelper(Math.max(L,W)*1.3, 24, 0x2a4a63, 0x1a2c3d);
+  grid.position.y = -H/2 - 0.5;
+  currentGroup.add(grid);
+
+  // boxes
+  containerResult.placed.forEach(p=>{
+    const bx = new THREE.BoxGeometry(p.l, p.h, p.w);
+    const mat = new THREE.MeshStandardMaterial({color:p.color, roughness:0.55, metalness:0.05});
+    const mesh = new THREE.Mesh(bx, mat);
+    mesh.position.set(
+      p.x - L/2 + p.l/2,
+      p.z - H/2 + p.h/2,
+      p.y - W/2 + p.w/2
+    );
+    currentGroup.add(mesh);
+    const be = new THREE.EdgesGeometry(bx);
+    const bl = new THREE.LineSegments(be, new THREE.LineBasicMaterial({color:0x06131f, transparent:true, opacity:0.35}));
+    bl.position.copy(mesh.position);
+    currentGroup.add(bl);
+  });
+
+  camDist = Math.max(L,W,H)*1.7;
+  canvasEmpty.style.display = 'none';
+}
+
+/* ============ 6. RUN / RENDER PIPELINE ============ */
+let packResult = null;
+const containerTabsEl = document.getElementById('containerTabs');
+const statsStripEl = document.getElementById('statsStrip');
+const legendEl = document.getElementById('legend');
+const unplacedPanel = document.getElementById('unplacedPanel');
+const unplacedListEl = document.getElementById('unplacedList');
+const footerActions = document.getElementById('footerActions');
+
+document.getElementById('runBtn').addEventListener('click', runPacking);
+
+function runPacking(){
+  const rows = readBoxTable();
+  if(rows.length===0){ alert('화물 데이터를 1건 이상 입력해주세요.'); return; }
+  const container = {
+    L: parseFloat(cL.value), W: parseFloat(cW.value), H: parseFloat(cH.value),
+    maxWeight: parseFloat(cMaxWeight.value)
+  };
+  if(!container.L || !container.W || !container.H){ alert('컨테이너 규격을 확인해주세요.'); return; }
+  const allowMulti = document.getElementById('multiContainer').value==='1';
+
+  document.getElementById('metaStatus').textContent='계산중';
+  document.getElementById('runBtn').disabled = true;
+  setTimeout(()=>{
+    packResult = packAll(rows, container, allowMulti);
+    packResult.containerSpec = container;
+    packResult.rows = rows;
+    renderAll();
+    document.getElementById('metaStatus').textContent='완료';
+    document.getElementById('runBtn').disabled = false;
+  }, 30);
+}
+
+let activeContainerIdx = 0;
+function renderAll(){
+  const {containers, finalUnplaced} = packResult;
+  // tabs
+  containerTabsEl.innerHTML='';
+  containers.forEach((c,idx)=>{
+    const tab=document.createElement('div');
+    tab.className='tab'+(idx===activeContainerIdx?' active':'');
+    tab.textContent = `컨테이너 #${idx+1}`;
+    tab.addEventListener('click', ()=>{ activeContainerIdx=idx; renderAll(); });
+    containerTabsEl.appendChild(tab);
+  });
+  if(activeContainerIdx>=containers.length) activeContainerIdx=0;
+  const active = containers[activeContainerIdx];
+  if(active) renderContainer(active, packResult.containerSpec);
+
+  // legend
+  legendEl.style.display='flex';
+  legendEl.innerHTML='';
+  packResult.rows.forEach(r=>{
+    const item=document.createElement('div'); item.className='legend-item';
+    item.innerHTML = `<span class="legend-swatch" style="background:${r.color}"></span>${escapeHtml(r.name)}`;
+    legendEl.appendChild(item);
+  });
+
+  // stats
+  statsStripEl.style.display='grid';
+  const contVol = packResult.containerSpec.L*packResult.containerSpec.W*packResult.containerSpec.H;
+  const util = active ? (active.usedVolume/contVol*100) : 0;
+  const weightPct = active ? (active.totalWeight/packResult.containerSpec.maxWeight*100) : 0;
+  const totalUnits = expandUnits(packResult.rows).length;
+  const totalPlaced = containers.reduce((s,c)=>s+c.placed.length,0);
+  statsStripEl.innerHTML = `
+    <div class="stat">
+      <div class="label">용적률 (현재 컨테이너)</div>
+      <div class="value ${util>92?'ok':util<60?'warn':''}">${util.toFixed(1)}%</div>
+      <div class="bar"><div style="width:${Math.min(util,100)}%"></div></div>
+    </div>
+    <div class="stat">
+      <div class="label">중량 적재율</div>
+      <div class="value ${weightPct>95?'warn':'ok'}">${weightPct.toFixed(1)}%</div>
+      <div class="sub">${active?active.totalWeight.toFixed(0):0} / ${packResult.containerSpec.maxWeight} kg</div>
+    </div>
+    <div class="stat">
+      <div class="label">전체 컨테이너 수</div>
+      <div class="value">${containers.length}대</div>
+      <div class="sub">현재 보고있는 컨테이너: #${activeContainerIdx+1}</div>
+    </div>
+    <div class="stat">
+      <div class="label">전체 적재 박스</div>
+      <div class="value ${finalUnplaced.length>0?'warn':'ok'}">${totalPlaced} / ${totalUnits}</div>
+      <div class="sub">${finalUnplaced.length>0? finalUnplaced.length+'개 미적재':'전량 적재 완료'}</div>
+    </div>
+  `;
+
+  // unplaced list
+  if(finalUnplaced.length>0){
+    unplacedPanel.style.display='block';
+    const grouped = {};
+    finalUnplaced.forEach(u=>{
+      const key=u.name+'|'+(u.reason||'space');
+      grouped[key] = grouped[key] || {name:u.name, reason:u.reason||'space', count:0};
+      grouped[key].count++;
+    });
+    unplacedListEl.innerHTML = Object.values(grouped).map(g=>`
+      <div class="unplaced-item">
+        <span class="name">${escapeHtml(g.name)} · ${g.count}개</span>
+        <span class="reason">${g.reason==='weight'?'중량 초과':'공간 부족'}</span>
+      </div>
+    `).join('');
+  } else {
+    unplacedPanel.style.display='block';
+    unplacedListEl.innerHTML = `<div class="empty-note">✓ 모든 화물이 적재되었습니다.</div>`;
+  }
+
+  footerActions.style.display='flex';
+}
+
+/* ============ 7. EXCEL EXPORT ============ */
+document.getElementById('exportBtn').addEventListener('click', ()=>{
+  if(!packResult) return;
+  const {containers, finalUnplaced, containerSpec} = packResult;
+  const wb = XLSX.utils.book_new();
+
+  const contVol = containerSpec.L*containerSpec.W*containerSpec.H;
+  const summaryRows = containers.map((c,idx)=>({
+    '컨테이너': `#${idx+1}`,
+    '규격(LxWxH cm)': `${containerSpec.L}x${containerSpec.W}x${containerSpec.H}`,
+    '적재 박스수': c.placed.length,
+    '용적률(%)': +( c.usedVolume/contVol*100 ).toFixed(1),
+    '적재중량(kg)': +c.totalWeight.toFixed(1),
+    '최대중량(kg)': containerSpec.maxWeight
+  }));
+  const wsSummary = XLSX.utils.json_to_sheet(summaryRows);
+  XLSX.utils.book_append_sheet(wb, wsSummary, '요약');
+
+  const detailRows=[];
+  containers.forEach((c,idx)=>{
+    c.placed.forEach(p=>{
+      detailRows.push({
+        '컨테이너': `#${idx+1}`,
+        '품목명': p.name,
+        '위치X(길이,cm)': p.x, '위치Y(폭,cm)': p.y, '위치Z(높이,cm)': p.z,
+        '적재길이': p.l, '적재폭': p.w, '적재높이': p.h,
+        '무게(kg)': p.weight
+      });
+    });
+  });
+  const wsDetail = XLSX.utils.json_to_sheet(detailRows);
+  XLSX.utils.book_append_sheet(wb, wsDetail, '적재상세');
+
+  if(finalUnplaced.length>0){
+    const grouped={};
+    finalUnplaced.forEach(u=>{
+      const key=u.name+'|'+(u.reason||'space');
+      grouped[key]=grouped[key]||{'품목명':u.name,'미적재수량':0,'사유':u.reason==='weight'?'중량 초과':'공간 부족'};
+      grouped[key]['미적재수량']++;
+    });
+    const wsUnplaced = XLSX.utils.json_to_sheet(Object.values(grouped));
+    XLSX.utils.book_append_sheet(wb, wsUnplaced, '미적재품목');
+  }
+
+  XLSX.writeFile(wb, 'container_loading_plan.xlsx');
+});
+
+initThree();
+</script>
+</body>
+</html>
